@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emergency Aid Search</title>
+    <style>
+        input {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            width: 300px;
+            border: 1px solid #ccc;
+            position: absolute;
+            background-color: white;
+            z-index: 1000;
+        }
+        li {
+            padding: 8px;
+            cursor: pointer;
+        }
+        li:hover {
+            background-color: #f0f0f0;
+        }
+        #aid-box {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #aaa;
+            width: 320px;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h2>Search Emergency Issue</h2>
+    <input type="text" id="search" placeholder="Type an issue...">
+    <ul id="suggestions"></ul>
+    <div id="aid-box" style="display:none;"></div>
+
+    <script>
+        const searchInput = document.getElementById("search");
+        const suggestionsList = document.getElementById("suggestions");
+        const aidBox = document.getElementById("aid-box");
+
+        searchInput.addEventListener("input", function () {
+            const query = searchInput.value;
+
+            if (query.length === 0) {
+                suggestionsList.innerHTML = "";
+                aidBox.style.display = "none";
+                return;
+            }
+
+            fetch(`/search?q=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    suggestionsList.innerHTML = "";
+                    data.forEach(item => {
+                        const li = document.createElement("li");
+                        li.textContent = item;
+                        li.onclick = () => {
+                            searchInput.value = item;
+                            suggestionsList.innerHTML = "";
+                            fetch(`/first_aid?issue=${encodeURIComponent(item)}`)
+                                .then(res => res.json())
+                                .then(aid => {
+                                    aidBox.innerHTML = `<strong>First Aid:</strong><br>${aid}`;
+                                    aidBox.style.display = "block";
+                                });
+                        };
+                        suggestionsList.appendChild(li);
+                    });
+                });
+        });
+    </script>
+</body>
+</html>
