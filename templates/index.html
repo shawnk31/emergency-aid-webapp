@@ -1,51 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emergency Aid Search</title>
     <style>
-        input {
-            width: 300px;
-            padding: 10px;
-            font-size: 16px;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px 20px;
         }
+
+        h2 {
+            color: #333;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
         ul {
             list-style: none;
             padding: 0;
-            width: 300px;
-            border: 1px solid #ccc;
+            margin: 0;
             position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
             background-color: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 0 0 8px 8px;
         }
+
         li {
-            padding: 8px;
+            padding: 12px 15px;
             cursor: pointer;
+            transition: background 0.3s;
         }
-        li:hover {
-            background-color: #f0f0f0;
+
+        li:hover,
+        li.active {
+            background-color: #e6f7ff;
         }
+
         #aid-box {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #aaa;
-            width: 320px;
-            background: #f9f9f9;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            display: none;
+        }
+
+        #aid-box strong {
+            color: #007acc;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
-    <h2>Search Emergency Issue</h2>
-    <input type="text" id="search" placeholder="Type an issue...">
-    <ul id="suggestions"></ul>
-    <div id="aid-box" style="display:none;"></div>
+    <h2>🚑 Emergency Aid Search</h2>
+    <div class="search-container">
+        <input type="text" id="search" placeholder="Type an emergency issue..." autocomplete="off">
+        <ul id="suggestions"></ul>
+    </div>
+    <div id="aid-box"></div>
 
     <script>
         const searchInput = document.getElementById("search");
         const suggestionsList = document.getElementById("suggestions");
         const aidBox = document.getElementById("aid-box");
+        let currentFocus = -1;
 
         searchInput.addEventListener("input", function () {
             const query = searchInput.value;
+            currentFocus = -1;
 
             if (query.length === 0) {
                 suggestionsList.innerHTML = "";
@@ -57,23 +107,56 @@
                 .then(response => response.json())
                 .then(data => {
                     suggestionsList.innerHTML = "";
-                    data.forEach(item => {
+                    data.forEach((item, index) => {
                         const li = document.createElement("li");
                         li.textContent = item;
-                        li.onclick = () => {
-                            searchInput.value = item;
-                            suggestionsList.innerHTML = "";
-                            fetch(`/first_aid?issue=${encodeURIComponent(item)}`)
-                                .then(res => res.json())
-                                .then(aid => {
-                                    aidBox.innerHTML = `<strong>First Aid:</strong><br>${aid}`;
-                                    aidBox.style.display = "block";
-                                });
-                        };
+                        li.setAttribute("data-index", index);
+                        li.onclick = () => selectItem(item);
                         suggestionsList.appendChild(li);
                     });
                 });
         });
+
+        searchInput.addEventListener("keydown", function(e) {
+            const items = suggestionsList.getElementsByTagName("li");
+            if (e.key === "ArrowDown") {
+                currentFocus++;
+                addActive(items);
+            } else if (e.key === "ArrowUp") {
+                currentFocus--;
+                addActive(items);
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                if (currentFocus > -1 && items[currentFocus]) {
+                    items[currentFocus].click();
+                }
+            }
+        });
+
+        function addActive(items) {
+            if (!items) return false;
+            removeActive(items);
+            if (currentFocus >= items.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = items.length - 1;
+            items[currentFocus].classList.add("active");
+        }
+
+        function removeActive(items) {
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove("active");
+            }
+        }
+
+        function selectItem(item) {
+            searchInput.value = item;
+            suggestionsList.innerHTML = "";
+            fetch(`/first_aid?issue=${encodeURIComponent(item)}`)
+                .then(res => res.json())
+                .then(aid => {
+                    aidBox.innerHTML = `<strong>First Aid Instructions:</strong><br><p>${aid}</p>`;
+                    aidBox.style.display = "block";
+                });
+        }
     </script>
 </body>
 </html>
