@@ -5,7 +5,7 @@ import re
 app = Flask(__name__)
 
 # Load the Excel file
-df = pd.read_excel(r"C:\Users\shash\Downloads\DATA FOR FIRST AID.xlsx")
+df = pd.read_excel(r"D:\emergency-aid\DATA FOR FIRST AID.xlsx")
 
 def wildcard_search(df, column_name, pattern):
     regex_pattern = pattern.replace("?", ".").replace("*", ".*")
